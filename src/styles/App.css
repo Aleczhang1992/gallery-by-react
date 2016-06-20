@@ -89,6 +89,7 @@ figcaption{
 
               p {
                 margin: 0;
+                line-height: 80px;
               }
 		}
 }
