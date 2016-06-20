@@ -24,6 +24,11 @@ function getRangeRandom(low,high){
 	return Math.ceil(Math.random()*(high-low)+low);
 }
 
+//获取0~30度之间的一个任意正负值
+function get30DegRandom(){
+	return (Math.random()>0.5?"":"-"+Math.ceil(Math.random()*30));
+}
+
 
 	var Constant={
 	
@@ -47,6 +52,22 @@ function getRangeRandom(low,high){
 
 //单图组件
 class ImgFigureComponent extends React.Component {	
+ 
+ 
+ handleClick(e){
+	if(this.props.arrange.isCenter){
+		this.props.inverse();
+	}else{
+		this.props.center();
+	}
+ 	
+ 	e.stopPropagation();
+ 	e.preventDefault();
+ }
+	
+componentDidMount()	{
+	
+}
   render() {
   	
   	let styleObj={};
@@ -54,15 +75,67 @@ class ImgFigureComponent extends React.Component {
   	if(this.props.arrange.pos){
   		styleObj=this.props.arrange.pos;
   	}
+  	//如果图片的旋转角度有值且不为0，则添加旋转角度
+  	if(this.props.arrange.rotate){
+  		(['MozTransform', 'msTransform', 'WebkitTransform', 'transform']).forEach((value)=>{
+  			styleObj[value]='rotate('+this.props.arrange.rotate+'deg)';
+  		});
+  	}
+  	
+  	//设置中心图片的层级
+  	if(this.props.arrange.isCenter){
+  		styleObj.zIndex=11;
+  	}
+  	//根据isInverse状态添加翻转类名
+  	let imgFigureClassName="img-figure";
+  	    imgFigureClassName+=this.props.arrange.isInverse?' is-inverse':'';
+  	
     return (
-     <figure className="img-figure" style={styleObj}>
+     <figure className={imgFigureClassName} style={styleObj} onClick={this.handleClick.bind(this)}>
      	<img src={this.props.data.imageURL} alt={this.props.data.title} />
      	<figcaption>
      		<h2 className="img-title">{this.props.data.title}</h2>
+     		<div className="img-back" onClick={this.handleClick.bind(this)}>
+     		  <p>
+     		   {this.props.data.desc}
+     		  </p>
+     		</div>
      	</figcaption>
      </figure>
     );
   }
+}
+
+//控制组件
+class ControllerUnit extends React.Component{
+	
+	handleClick(e){
+		//如果点击的是当前正在选中态的按钮，则翻转图片，否则将图片居中
+		if(this.props.arrange.isCenter){
+			this.props.inverse();
+		}else{
+			this.props.center()
+		}
+		e.preventDefault();
+		e.stopPropagation();
+	}
+	
+	render(){
+		let controllerUnitClassName="controller-unit";
+
+		//如果对应的是居中图片，显示控制按钮居中态
+		if(this.props.arrange.isCenter){
+			controllerUnitClassName+=" is-center";
+			//如果同时对应的是翻转图片，显示控制按钮翻转态
+			if(this.props.arrange.isInverse){
+				controllerUnitClassName+=" is-inverse";
+			}
+		}
+		return(
+			<span className={controllerUnitClassName} onClick={this.handleClick.bind(this)}>
+			</span>
+		)
+	}
 }
 
 
@@ -71,26 +144,40 @@ class AppComponent extends React.Component {
 	 constructor(props){
 	    super(props);
     this.state={
-		imgsArrangeArr:[]
+		imgsArrangeArr:[
+//		{
+//			pos:{
+//				left:"0",
+//				top:"0"
+//			},//图片位置
+//			rotate:0,   //旋转角度
+//			isInverse:false,  //图片正反面
+//          isCenter:false,//图片是否居中
+//		}
+		]
 
 	};
   }
-//	getInitialState(){
-//		return {
-//			[
-////				{
-////					pos:{
-////						left:'0',
-////						top:'0'
-////					}
-////					
-////				}
-//			
-//			
-//			]
-//		}
-//	}
-	
+
+
+//翻转图片
+//@param index 输入当前被执行inverse操作的图片对应的图片信息数组的index值
+// @return {Function}这是一个闭包函数，内部return 一个真正待被执行的函数 
+ 
+ inverse(index){
+
+ 		var imgsArrangeArr=this.state.imgsArrangeArr;
+ 		imgsArrangeArr[index].isInverse=!imgsArrangeArr[index].isInverse;
+ 		this.setState({
+ 			imgsArrangeArr:imgsArrangeArr
+ 		});	
+
+ }
+
+//利用rearrange函数，居中对应index的图片
+center(index){
+	this.reArrange(index);
+}
 
 	
 
@@ -108,20 +195,31 @@ class AppComponent extends React.Component {
  		vPosRangeTopY=vPosRange.topY,
  		vPosRangeX=vPosRange.x,
  		imgsArrangeTopArr=[],
- 		topImgNum=Math.ceil(Math.random()*2),
+ 		topImgNum=Math.floor(Math.random()*2),
  		//取一个或者不取
  		topImgSpliceIndex=0,
  		imgsArrangeCenterArr=imgsArrangeArr.splice(centerIndex,1);
- 		//首先居中centerIndex的图片
- 		imgsArrangeCenterArr[0].pos=centerPos;
+ 		//首先居中centerIndex的图片，居中图片centerIndex不需要旋转
+ 		imgsArrangeCenterArr[0]={
+ 			pos:centerPos,
+ 			rotate:0,
+ 			isCenter:true
+ 		};
+
+ 		
  		//取出要布局上侧图片的状态信息
  		topImgSpliceIndex=Math.ceil(Math.random()*(imgsArrangeArr.length-topImgNum));
  		imgsArrangeTopArr=imgsArrangeArr.splice(topImgSpliceIndex,topImgNum);
  		//布局位于上侧的图片
  		imgsArrangeTopArr.forEach((value,index)=>{
- 			imgsArrangeTopArr[index].pos={
- 				top:getRangeRandom(vPosRangeTopY[0],vPosRangeTopY[1]),
- 				left:getRangeRandom(vPosRangeX[0],vPosRangeX[1])
+ 			imgsArrangeTopArr[index]={
+ 				pos:{
+ 					top:getRangeRandom(vPosRangeTopY[0],vPosRangeTopY[1]),
+ 					left:getRangeRandom(vPosRangeX[0],vPosRangeX[1])
+ 				},
+ 				rotate:get30DegRandom(),
+ 				isCenter:false
+ 				
  			}
  		});
  		
@@ -135,12 +233,18 @@ class AppComponent extends React.Component {
  			}else{
  				hPosRangeLORX=hPosRangeRightSecX;
  			}
-// 			console.log("hPosRangeLORX",hPosRangeLeftSecX);
- 			imgsArrangeArr[i].pos={
- 				top:getRangeRandom(hPosRangeY[0],hPosRangeY[1]),
- 				left:getRangeRandom(hPosRangeLORX[0],hPosRangeLORX[1])
+ 			imgsArrangeArr[i]={
+ 				pos:{
+ 					top:getRangeRandom(hPosRangeY[0],hPosRangeY[1]),
+ 					left:getRangeRandom(hPosRangeLORX[0],hPosRangeLORX[1])
+ 				},
+ 				rotate:get30DegRandom(),
+ 				isCenter:false
+ 				
  			}
  		}
+ 		
+// 		debugger;
  		if(imgsArrangeTopArr&&imgsArrangeTopArr[0]){
  			imgsArrangeArr.splice(topImgSpliceIndex,0,imgsArrangeTopArr[0]);
  		}
@@ -208,11 +312,27 @@ class AppComponent extends React.Component {
   				pos:{
 						left:'0',
 						top:'0'
-					}
+					},
+				rotate:0,
+				isInverse:false,
+				isCenter:false
   			}
   		}
   		
-  		imgFigures.push(<ImgFigureComponent data={value} arrange={this.state.imgsArrangeArr[index]}  ref={'imgFigure'+index} key={'imgFigure'+index} />);
+  		imgFigures.push(<ImgFigureComponent data={value} 
+  			key={index}
+  			arrange={this.state.imgsArrangeArr[index]}  
+  			ref={'imgFigure'+index} key={'imgFigure'+index}
+  			inverse={()=>this.inverse(index)}
+  			center={()=>this.center(index)}
+  			/>);
+  			
+  		controllerUnits.push(<ControllerUnit
+  			key={index}
+  			arrange={this.state.imgsArrangeArr[index]} 
+  			inverse={()=>this.inverse(index)}
+  			center={()=>this.center(index)}
+  			/>);
   	});
   	
     return (

@@ -36,30 +36,23 @@ let config = Object.assign({}, baseConfig, {
 });
 
 // Add needed loaders to the defaults here
-config.module.loaders.push([
-	{
+config.module.loaders.push({
   test: /\.(js|jsx)$/,
   loader: 'babel',
   include: [].concat(
     config.additionalPaths,
     [ path.join(__dirname, '/../src') ]
   )
-},
-{
-  test: /\.css$/,
-  loader: "style-loader!css-loader!postcss-loader",
-  //解析生效目录
-  include: [].concat(
-    config.additionalPaths,
-    [ path.join(__dirname, '/../src') ]
-  )
-},
-{
+});
+	
+config.module.loaders.push({
   test: /\.json$/,
   loader: "json-loader",
-}]
-	);
-
+});
+config.module.loaders.push({
+	  test: /\.(woff|woff2|eot|ttf|svg)$/,
+	  loader: "url-loader?limit=8192",
+	})
 
 
 module.exports = config;
